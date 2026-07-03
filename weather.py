@@ -4,11 +4,14 @@ from logging.handlers import TimedRotatingFileHandler
 import requests
 from dotenv import load_dotenv
 
-load_dotenv()
+
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+
+load_dotenv(os.path.join(SCRIPT_DIR, ".env"))
 
 # Rotate log weekly on Monday, keep 1 previous week as backup
 handler = TimedRotatingFileHandler(
-    'weather.log',
+    os.path.join(SCRIPT_DIR, "weather.log"),
     when='W0',
     interval=1,
     backupCount=1
