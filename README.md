@@ -1,56 +1,64 @@
 # 🌤️ Weather Notifier
 
-A lightweight Python application that fetches real-time weather data for a fixed location and delivers a daily summary via push notification. Built to run unattended on a Raspberry Pi using cron for scheduling.
+A Python app that checks the weather daily and sends a push notification with the summary. Runs unattended on a Raspberry Pi via cron.
 
 ## Features
 
-- Fetches live weather data (temperature, conditions, humidity, wind) from the OpenWeatherMap API
-- Sends a formatted daily summary as a push notification via [ntfy.sh](https://ntfy.sh)
-- Sends a failure alert if the check fails (bad API response, no internet, timeout) — no silent failures
-- Rotating log files (weekly rotation, one week of backup retained)
-- Runs automatically on a schedule via cron
-- Fully portable: environment-based configuration means no code changes are needed between machines (tested across x86 dev machine and ARM-based Raspberry Pi)
-
-## How it works
-
-1. A cron job triggers the script once daily
-2. The script requests current weather data for a fixed latitude/longitude from OpenWeatherMap
-3. The response is parsed and formatted into a human-readable summary
-4. The summary is logged locally and pushed as a notification to a subscribed device
-5. If any step fails, an error is logged and a failure notification is sent instead
+- Fetches live weather data from the OpenWeatherMap API
+- Sends a daily summary via push notification ([ntfy.sh](https://ntfy.sh))
+- Sends a failure alert if the check fails — no silent failures
+- Weekly log rotation
+- Fully portable via environment-based config (tested on x86 and ARM/Raspberry Pi)
 
 ## Tech Stack
 
-- **Python 3**
-- [`requests`](https://pypi.org/project/requests/) — HTTP requests to the weather API and notification service
-- [`python-dotenv`](https://pypi.org/project/python-dotenv/) — environment variable management
-- Python's built-in `logging` module with `TimedRotatingFileHandler`
-- [OpenWeatherMap API](https://openweathermap.org/api) — weather data source
-- [ntfy.sh](https://ntfy.sh) — free, open-source push notification service
-- `cron` — task scheduling
+Python 3 · `requests` · `python-dotenv` · built-in `logging` · [OpenWeatherMap API](https://openweathermap.org/api) · [ntfy.sh](https://ntfy.sh) · `cron`
 
 ## Setup
-
-### 1. Clone the repo
 
 ```bash
 git clone https://github.com/your-username/weather-py.git
 cd weather-py
-```
-
-### 2. Create a virtual environment
-
-```bash
 python3 -m venv .venv
-source .venv/bin/activate   # or .venv/bin/activate.fish for fish shell
-```
-
-### 3. Install dependencies
-
-```bash
+source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 4. Configure environment variables
+Create a `.env` file:
 
-Create a `.env` file in the project root:
+```
+API_KEY=your_openweathermap_api_key
+LAT=your_latitude
+LON=your_longitude
+NTFY_TOPIC=your_unique_ntfy_topic
+```
+
+Get an API key from [OpenWeatherMap](https://openweathermap.org/api), then install the [ntfy app](https://ntfy.sh/) and subscribe to your chosen topic.
+
+Run it:
+
+```bash
+python weather.py
+```
+
+## Scheduling
+
+```bash
+crontab -e
+```
+
+```
+0 7 * * * /path/to/weather-py/.venv/bin/python /path/to/weather-py/weather.py
+```
+
+Runs daily at 7:00 AM. File paths in the script are resolved relative to the script's location, so it works correctly regardless of cron's working directory.
+
+## Future Improvements
+
+- Multi-day forecast
+- Severe weather alerts
+- Configurable notification schedule
+
+## License
+
+MIT
