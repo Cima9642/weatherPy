@@ -56,6 +56,14 @@ def format_weather(data):
         f"Humidity: {humidity}%\n"
         f"Wind Speed: {wind} mph"
     )
+NTFY_TOPIC = os.getenv("NTFY_TOPIC")
+
+def send_notification(summary):
+    requests.post(
+        f"https://ntfy.sh/{NTFY_TOPIC}",
+        data=summary.encode("utf-8"),
+        headers={"Title": "Daily Weather Update"}
+    )
 
 if __name__ == "__main__":
     try:
@@ -63,11 +71,16 @@ if __name__ == "__main__":
         summary = format_weather(data)
         logging.info("Weather data retrieved successfully.\n%s", summary)
         print(summary)
+        send_notification(summary)
     except requests.exceptions.HTTPError as e:
         logging.error("API error: %s", e.response.status_code)
+        send_notification(f"Weather check failed: API error {e.response.status_code}")
     except requests.exceptions.ConnectionError:
         logging.error("No internet connection.")
+        send_notification("Weather check failed: no internet connection.")
     except requests.exceptions.Timeout:
         logging.error("Request timed out.")
+        send_notification("Weather check failed: request timed out.")
     except KeyError as e:
         logging.error("Unexpected response format - missing key: %s", e)
+        send_notification(f"Weather check failed: unexpected API response (missing {e}).")
