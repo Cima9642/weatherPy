@@ -1,0 +1,25 @@
+2026-07-03 13:59:57,057 - INFO - Weather data retrieved successfully.
+Weather update:
+Weather in Windcrest:
+Description: Scattered Clouds
+Temperature: 94°F
+Feels Like: 106°F
+Humidity: 55%
+Wind Speed: 5.01 mph
+2026-07-04 15:13:23,865 - INFO - Weather data retrieved successfully.
+Weather update:
+Weather in Windcrest:
+Description: Broken Clouds
+Temperature: 95°F
+Feels Like: 105°F
+Humidity: 50%
+Wind Speed: 1.99 mph
+2026-07-04 15:13:45,237 - INFO - Weather data retrieved successfully.
+Weather update:
+Weather in Windcrest:
+Description: Broken Clouds
+Temperature: 95°F
+Feels Like: 105°F
+Humidity: 50%
+Wind Speed: 1.99 mph
+2026-07-04 15:14:16,354 - ERROR - API error: 401
