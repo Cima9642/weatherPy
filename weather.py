@@ -48,11 +48,11 @@ def format_weather(data):
     city_name = data["name"]
 
     return (
-        f"Weather update:\n"
+        
         f"Weather in {city_name}:\n"
         f"Description: {description}\n"
         f"Temperature: {temp}°F\n"
-        f"Feels Like: {feels_like}°F\n"
+        f"Feels Like: {feels_like}°F"
         f"Humidity: {humidity}%\n"
         f"Wind Speed: {wind} mph"
     )
