@@ -1,4 +1,5 @@
 import os
+import uuid
 import logging
 from logging.handlers import TimedRotatingFileHandler
 import requests
@@ -26,7 +27,15 @@ API_KEY = os.getenv("API_KEY")
 LAT = os.getenv("LAT")
 LON = os.getenv("LON")
 
+GOVEE_API_KEY = os.getenv("GOVEE_API_KEY")
+GOVEE_DEVICE = os.getenv("GOVEE_DEVICE")
+GOVEE_SKU = os.getenv("GOVEE_SKU")
+GOVEE_BASE_URL = "https://openapi.api.govee.com/router/api/v1/device/control"
+
 BASE_URL = "https://api.openweathermap.org/data/2.5/weather"
+
+NTFY_TOPIC = os.getenv("NTFY_TOPIC")
+
 
 def get_weather():
     params = {
@@ -56,7 +65,6 @@ def format_weather(data):
         f"Humidity: {humidity}%\n"
         f"Wind Speed: {wind} mph"
     )
-NTFY_TOPIC = os.getenv("NTFY_TOPIC")
 
 def send_notification(summary):
     requests.post(
@@ -64,7 +72,76 @@ def send_notification(summary):
         data=summary.encode("utf-8"),
         headers={"Title": "Daily Weather Update"}
     )
+    
+def get_color_for_condition(condition_id):
+    if 200 <= condition_id < 300:
+        return (128,0,128) # Purple for Thunderstorm
+    elif 300 <= condition_id < 400:
+        return (100,149,237) # Light Blue for Drizzle
+    elif 500 <= condition_id < 600:
+        return (0,0,255) # Blue for Rain
+    elif 600 <= condition_id < 700:
+        return (255,255,255) # White for Snow
+    elif 700 <= condition_id < 800:
+        return (169, 169, 169) # Gray for Fog/mist/Haze
+    elif condition_id == 800:
+        return (255,140,0) # Orange for Clear
+    elif 801 <= condition_id <= 804:
+        return (128,128,128) # Teal for Clouds
+    else:
+        return (255, 255, 255) # Fallback to White for unknown conditions
+    
+def get_brightness_for_temp(temp_f):
+    min_temp, max_temp = 30, 100
+    min_brightness, max_brightness = 20, 100
+    
+    clamped_temp = max(min_temp, min(temp_f, max_temp))
+    ratio = (clamped_temp - min_temp) / (max_temp - min_temp)
+    brightness = min_brightness + ratio * (max_brightness - min_brightness)
+    
+    return round(brightness)
 
+def set_light_color(r, g, b):
+    color_int = (r << 16) | (g << 8) | b
+    payload = {
+        "requestId": str(uuid.uuid4()),
+        "payload": {
+            "sku": GOVEE_SKU,
+            "device": GOVEE_DEVICE,
+            "capability": {
+                "type": "devices.capabilities.color_setting",
+                "instance": "colorRgb",
+                "value": color_int
+            }
+        }
+    }
+    headers = {
+        "Content-Type": "application/json",
+        "Govee-API-Key": GOVEE_API_KEY
+    }
+    requests.post(GOVEE_BASE_URL, json=payload, headers=headers, timeout=10)
+
+    
+def set_light_brightness(percent):
+    payload = {
+        "requestId": str(uuid.uuid4()),
+        "payload": {
+            "sku": GOVEE_SKU,
+            "device": GOVEE_DEVICE,
+            "capability": {
+                "type": "devices.capabilities.range",
+                "instance": "brightness",
+                "value": percent
+            }
+        }
+    }
+    headers = {
+        "Content-Type": "application/json",
+        "Govee-API-Key": GOVEE_API_KEY
+    }
+    requests.post(GOVEE_BASE_URL, json=payload, headers=headers, timeout=10)
+    
+    
 if __name__ == "__main__":
     try:
         data = get_weather()
@@ -72,6 +149,16 @@ if __name__ == "__main__":
         logging.info("Weather data retrieved successfully.\n%s", summary)
         print(summary)
         send_notification(summary)
+
+        condition_id = data["weather"][0]["id"]
+        temp = data["main"]["temp"]
+        r, g, b = get_color_for_condition(condition_id)
+        brightness = get_brightness_for_temp(temp)
+
+        set_light_color(r, g, b)
+        set_light_brightness(brightness)
+        logging.info("Light updated: color=(%d,%d,%d), brightness=%d%%", r, g, b, brightness)
+
     except requests.exceptions.HTTPError as e:
         logging.error("API error: %s", e.response.status_code)
         send_notification(f"Weather check failed: API error {e.response.status_code}")
